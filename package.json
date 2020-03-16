@@ -1,0 +1,26 @@
+{
+  "name": "covid-digest",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "puf17640",
+  "license": "ISC",
+  "dependencies": {
+    "@sendgrid/mail": "6.5.4",
+    "cookie-parser": "1.4.4",
+    "dotenv": "8.2.0",
+    "ejs": "3.0.1",
+    "express": "4.17.1",
+    "express-session": "1.17.0",
+    "helmet": "3.21.3",
+    "moment": "2.24.0",
+    "mongoose": "5.9.4",
+    "morgan": "1.9.1",
+    "node-cron": "2.0.3",
+    "path": "0.12.7",
+    "request": "2.88.2"
+  }
+}
