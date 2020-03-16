@@ -103,12 +103,7 @@ function validateEmailAddress(email) {
 
 function getCountries(){
   return new Promise((resolve, reject) => {
-    request("https://api.covid19api.com/countries", null, (err, data) => {
-      if(err) 
-        reject(err)
-      else
-        resolve(JSON.parse(data.body))
-    })
+    resolve(JSON.parse(fs.readFileSync(path.join(__dirname, '/countries.json'))))
   })
 }
 
@@ -177,9 +172,7 @@ cron.schedule("0 15 20 * * *", ()=>{
           mailer.send({
             personalizations: obj.users.map(u => ({
               to: [{email:u.email}], 
-              subject: `COVID19 Daily Digest for ${obj.country.name}`, 
-              substitutionWrappers: [':', ''], 
-              substitutions: { "user_email": u.email, "country_name": obj.country.slug },
+              subject: `COVID19 Daily Digest for ${obj.country.name}`,
               dynamic_template_data: { 
                 country: obj.country.name,
                 firstConfirmed: Math.floor(Math.abs(moment.duration(moment(obj.firstConfirmed).diff(moment())).asDays())) || 0,
