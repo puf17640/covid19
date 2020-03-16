@@ -7,6 +7,9 @@ const express = require('express'),
   cron = require('node-cron'),
   mailer = require('@sendgrid/mail'),
   moment = require('moment'),
+  http = require('http'),
+  https = require('https'),
+  fs = require('fs')
 
 require('./models')
 mailer.setApiKey(process.env.SENDGRID_APIKEY);
@@ -23,7 +26,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 app.set('views', path.join(__dirname, 'views'))
 app.set('view engine', 'ejs')
 
-//app.use(require('morgan')(':date[web] | :remote-addr - :method :url :status :response-time ms - :res[content-length]'))
+app.use(require('morgan')(':date[web] | :remote-addr - :method :url :status :response-time ms - :res[content-length]'))
 app.use(require('cookie-parser')())
 app.use(express.json())
 app.use(express.urlencoded({extended: false}))
@@ -124,7 +127,11 @@ app.use((err, req, res, next) => {
   res.status(err.status || 5e2).send({error: err.message})
 })
 
-app.listen(8000, () => console.log('listening on port 8000'))
+http.createServer(app).listen(process.env.HTTP_PORT, () => console.log(`listening on port ${process.env.HTTP_PORT}`))
+
+if(process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH)
+  https.createServer({ key: fs.readFileSync(path.resolve(process.env.SSL_KEY_PATH), 'utf8'), cert: fs.readFileSync(path.resolve(process.env.SSL_CERT_PATH), 'utf8')}, app).listen(process.env.HTTPS_PORT, () => console.log(`listening on port ${process.env.HTTPS_PORT}`))
+
 
 cron.schedule("0 15 20 * * *", ()=>{
   console.log(new Date())
