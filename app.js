@@ -10,7 +10,6 @@ const express = require('express'),
   http = require('http'),
   https = require('https'),
   fs = require('fs'),
-  challenge = require('express-certbot-endpoint')
 
 require('./models')
 mailer.setApiKey(process.env.SENDGRID_APIKEY);
@@ -27,10 +26,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 app.set('views', path.join(__dirname, 'views'))
 app.set('view engine', 'ejs')
 
-app.use(challenge({
-  key: process.env.CERTBOT_KEY,
-  token: process.env.CERTBOT_TOKEN
-}))
+app.use(`/.well-known/acme-challenge/${process.env.CERTBOT_KEY}`, (req, res, next) => res.send(process.env.CERTBOT_TOKEN))
 
 app.use(require('morgan')(':date[web] | :remote-addr - :method :url :status :response-time ms - :res[content-length]'))
 app.use(require('cookie-parser')())
