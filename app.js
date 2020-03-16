@@ -201,7 +201,7 @@ cron.schedule("0 15 20 * * *", ()=>{
                 countrySlug: obj.country.slug
               }
             })),
-            from: 'daily-digest@covid19.com',
+            from: obj.country.slug+'@covid19dailydigest.com',
             templateId: 'd-370c448d35d84873b2331072594c6842',
           })
           console.log(`Sent report for ${obj.country.name} to ${obj.users.map(u=>u.email).join(", ")}`)
