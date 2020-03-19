@@ -125,7 +125,7 @@ if(process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH)
 
 ron.schedule("0 15 20 * * *", ()=>{
   console.log(new Date())
-  getCountries().then(countrices => {
+  getCountries().then(countries => {
     Promise.all(countries.map(country => new Promise((resolve, reject) => {
       User.find({
         country: country.toLowerCase().replace(/ /g, '-')
@@ -160,7 +160,26 @@ ron.schedule("0 15 20 * * *", ()=>{
           resolve(obj)
         }))).then(data => {
           for(var obj of data){
-            console.log(obj)
+            console.log({ 
+              country: obj.country,
+              firstConfirmed: Math.floor(Math.abs(moment.duration(moment(obj.firstConfirmed).diff(moment())).asDays())) || 0,
+              firstConfirmedDate: isNaN(new Date(obj.firstConfirmed).getTime()) ? "N/A" : new Date(obj.firstConfirmed).toLocaleDateString(),
+              firstRecovery: Math.floor(Math.abs(moment.duration(moment(obj.firstRecovery).diff(moment())).asDays())) || 0,
+              firstRecoveryDate: isNaN(new Date(obj.firstRecovery).getTime()) ? "N/A" : new Date(obj.firstRecovery).toLocaleDateString(),
+              firstDeath: Math.floor(Math.abs(moment.duration(moment(obj.firstDeath).diff(moment())).asDays())) || 0,
+              firstDeathDate: isNaN(new Date(obj.firstDeath).getTime()) ? "N/A" : new Date(obj.firstDeath).toLocaleDateString(),
+              totalConfirmed: obj.totalConfirmed,
+              totalRecoveries: obj.totalRecoveries,
+              totalDeaths: obj.totalDeaths,
+              increaseConfirmed: obj.increaseConfirmed,
+              increaseRecoveries: obj.increaseRecoveries,
+              increaseDeaths: obj.increaseDeaths,
+              increaseConfirmedNum: obj.increaseConfirmedNum,
+              increaseRecoveriesNum: obj.increaseRecoveriesNum,
+              increaseDeathsNum: obj.increaseDeathsNum,
+              users: obj.users,
+              countrySlug: obj.country.toLowerCase().replace(/ /g, '-')
+            })
             continue;
             mailer.send({
               personalizations: obj.users.map(u => ({
