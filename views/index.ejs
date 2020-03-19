@@ -144,7 +144,7 @@
                         <form action="/register" method="POST">
                             <select name="country">
                                 <% for (var country of data) { %>
-                                    <option value="<%= country.Slug %>"><%= country.Country %></option>
+                                    <option value="<%= country %>"><%= country %></option>
                                 <% } %>
                             </select>
                             <input type="email" name="email" placeholder="Enter Your Email">
