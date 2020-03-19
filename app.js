@@ -123,9 +123,9 @@ if(process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH)
   https.createServer({ key: fs.readFileSync(path.resolve(process.env.SSL_KEY_PATH), 'utf8'), cert: fs.readFileSync(path.resolve(process.env.SSL_CERT_PATH), 'utf8')}, app).listen(process.env.HTTPS_PORT, () => console.log(`listening on port ${process.env.HTTPS_PORT}`))
 
 
-//cron.schedule("0 15 20 * * *", ()=>{
+ron.schedule("0 15 20 * * *", ()=>{
   console.log(new Date())
-  getCountries().then(countries => {
+  getCountries().then(countrices => {
     Promise.all(countries.map(country => new Promise((resolve, reject) => {
       User.find({
         country: country.toLowerCase().replace(/ /g, '-')
@@ -144,8 +144,9 @@ if(process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH)
             users: d.users,
             stats: stats[d.country]
           }
-          obj["firstConfirmed"] = Date.parse(obj.stats.filter(s => s.confirmed > 0)[0].date)
-          obj["firstRecovery"] = Date.parse(obj.stats.filter(s => s.recovered > 0)[0].date)
+          console.log(obj)
+          obj["firstConfirmed"] = Date.parse((obj.stats.filter(s => s.confirmed > 0)[0] || {}).date)
+          obj["firstRecovery"] = Date.parse((obj.stats.filter(s => s.recovered > 0)[0] || {}).date)
           obj["firstDeath"] = Date.parse((obj.stats.filter(s => s.deaths > 0)[0] || {}).date)
           obj["totalConfirmed"] = obj.stats[obj.stats.length-1].confirmed
           obj["totalRecoveries"] = obj.stats[obj.stats.length-1].recovered
@@ -159,6 +160,8 @@ if(process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH)
           resolve(obj)
         }))).then(data => {
           for(var obj of data){
+            console.log(obj)
+            continue;
             mailer.send({
               personalizations: obj.users.map(u => ({
                 to: [{email:u.email}], 
@@ -193,4 +196,4 @@ if(process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH)
       }).catch((e) => console.log("err: "+e))
     }).catch(console.log)
   })
-//})
+})
