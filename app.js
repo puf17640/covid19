@@ -123,7 +123,7 @@ if(process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH)
   https.createServer({ key: fs.readFileSync(path.resolve(process.env.SSL_KEY_PATH), 'utf8'), cert: fs.readFileSync(path.resolve(process.env.SSL_CERT_PATH), 'utf8')}, app).listen(process.env.HTTPS_PORT, () => console.log(`listening on port ${process.env.HTTPS_PORT}`))
 
 
-ron.schedule("0 15 20 * * *", ()=>{
+//cron.schedule("0 15 20 * * *", ()=>{
   console.log(new Date())
   getCountries().then(countries => {
     Promise.all(countries.map(country => new Promise((resolve, reject) => {
@@ -215,4 +215,4 @@ ron.schedule("0 15 20 * * *", ()=>{
       }).catch((e) => console.log("err: "+e))
     }).catch(console.log)
   })
-})
+//})
