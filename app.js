@@ -186,7 +186,7 @@ cron.schedule("0 15 20 * * *", ()=>{
                 }
               })),
               from: obj.country.toLowerCase().replace(/ /g, '-')+'@covid19dailydigest.com',
-              templateId: 'd-370c448d35d84873b2331072594c6842',
+              templateId: 'd-e178db6964e74919b1796070a2142e73',
             })
             console.log(`Sent report for ${obj.country} to ${obj.users.map(u=>u.email).join(", ")}`)
           }
