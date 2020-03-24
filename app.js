@@ -67,6 +67,7 @@ app.post('/register', (req, res, next) => {
         let newU = new User({email, country: country.toLowerCase().replace(/ /g, '-')})
         newU.save((err)=> {
           req.session.user = newU
+          console.log(`${email} subscribed to mails for ${country}`)
           res.redirect('/#signup')
         })
       }else{
@@ -84,6 +85,7 @@ app.get('/unregister', (req, res, next) => {
   }, (err, user) => {
     if (err) return next(err)
     if (user) {
+      console.log(`${email} unsubscribed from mails for ${country}`)
       user.remove()
       req.session.unregistered = true
       req.session.user = null
@@ -118,7 +120,7 @@ if(process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH)
   https.createServer({ key: fs.readFileSync(path.resolve(process.env.SSL_KEY_PATH), 'utf8'), cert: fs.readFileSync(path.resolve(process.env.SSL_CERT_PATH), 'utf8')}, app).listen(process.env.HTTPS_PORT, () => console.log(`listening on port ${process.env.HTTPS_PORT}`))
 
 
-//cron.schedule("0 15 20 * * *", async () =>{
+cron.schedule("0 15 20 * * *", async () =>{
   console.log(new Date())
   getCountries().then(countries => 
     Promise.all(countries.map(c => 
@@ -166,4 +168,4 @@ if(process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH)
         }
     })
   }))
-//})
+})
