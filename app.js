@@ -2,7 +2,6 @@ const express = require('express'),
   mongoose = require('mongoose'),
   path = require('path'),
   dotenvconf = require('dotenv').config(),
-  request = require('request')
   app = express(),
   cron = require('node-cron'),
   mailer = require('@sendgrid/mail'),
@@ -10,7 +9,7 @@ const express = require('express'),
   http = require('http'),
   https = require('https'),
   fs = require('fs'),
-  rp = require('request-promise')
+  api = require('novelcovid')
 
 require('./models')
 mailer.setApiKey(process.env.SENDGRID_APIKEY);
@@ -107,10 +106,6 @@ function getCountries(){
   })
 }
 
-function getStats(){
-  return rp("https://pomber.github.io/covid19/timeseries.json", {json: true})
-}
-
 app.use((err, req, res, next) => {
   res.locals.message = err.message
   res.locals.error = !isProduction ? err : {}
@@ -123,75 +118,52 @@ if(process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH)
   https.createServer({ key: fs.readFileSync(path.resolve(process.env.SSL_KEY_PATH), 'utf8'), cert: fs.readFileSync(path.resolve(process.env.SSL_CERT_PATH), 'utf8')}, app).listen(process.env.HTTPS_PORT, () => console.log(`listening on port ${process.env.HTTPS_PORT}`))
 
 
-cron.schedule("0 15 20 * * *", ()=>{
+//cron.schedule("0 15 20 * * *", async () =>{
   console.log(new Date())
-  getCountries().then(countries => {
-    Promise.all(countries.map(country => new Promise((resolve, reject) => {
-      User.find({
-        country: country.toLowerCase().replace(/ /g, '-')
-      }, (err, users) => {
-        if(err)
-          reject(err)
-        else 
-          resolve({country, users})
-      })
-    }))).then(data => {
-      data = data.filter(d => d.users.length > 0)
-      getStats().then(stats => {
-        Promise.all(data.map(d => new Promise((resolve, reject) => {
-          var obj = {
-            country: d.country,
-            users: d.users,
-            stats: stats[d.country]
-          }
-          console.log(obj)
-          obj["firstConfirmed"] = Date.parse((obj.stats.filter(s => s.confirmed > 0)[0] || {}).date)
-          obj["firstRecovery"] = Date.parse((obj.stats.filter(s => s.recovered > 0)[0] || {}).date)
-          obj["firstDeath"] = Date.parse((obj.stats.filter(s => s.deaths > 0)[0] || {}).date)
-          obj["totalConfirmed"] = obj.stats[obj.stats.length-1].confirmed
-          obj["totalRecoveries"] = obj.stats[obj.stats.length-1].recovered
-          obj["totalDeaths"] = obj.stats[obj.stats.length-1].deaths
-          obj["increaseConfirmed"] = parseFloat(((obj.totalConfirmed / obj.stats[obj.stats.length-2].confirmed * 100)-100).toFixed(3))
-          obj["increaseRecoveries"] = parseFloat(((obj.totalRecoveries / obj.stats[obj.stats.length-2].recovered * 100)-100).toFixed(3))
-          obj["increaseDeaths"] = parseFloat(((obj.totalDeaths / obj.stats[obj.stats.length-2].deaths * 100)-100).toFixed(3))
-          obj["increaseConfirmedNum"] = obj.totalConfirmed - obj.stats[obj.stats.length-2].confirmed
-          obj["increaseRecoveriesNum"] = obj.totalRecoveries - obj.stats[obj.stats.length-2].recovered
-          obj["increaseDeathsNum"] = obj.totalDeaths - obj.stats[obj.stats.length-2].deaths
-          resolve(obj)
-        }))).then(data => {
-          for(var obj of data){
-            mailer.send({
-              personalizations: obj.users.map(u => ({
-                to: [{email:u.email}], 
-                subject: `COVID19 Daily Digest for ${obj.country}`,
-                dynamic_template_data: { 
-                  country: obj.country,
-                  firstConfirmed: Math.floor(Math.abs(moment.duration(moment(obj.firstConfirmed).diff(moment())).asDays())) || 0,
-                  firstConfirmedDate: isNaN(new Date(obj.firstConfirmed).getTime()) ? "N/A" : new Date(obj.firstConfirmed).toLocaleDateString(),
-                  firstRecovered: Math.floor(Math.abs(moment.duration(moment(obj.firstRecovery).diff(moment())).asDays())) || 0,
-                  firstRecoveredDate: isNaN(new Date(obj.firstRecovery).getTime()) ? "N/A" : new Date(obj.firstRecovery).toLocaleDateString(),
-                  firstDeath: Math.floor(Math.abs(moment.duration(moment(obj.firstDeath).diff(moment())).asDays())) || 0,
-                  firstDeathDate: isNaN(new Date(obj.firstDeath).getTime()) ? "N/A" : new Date(obj.firstDeath).toLocaleDateString(),
-                  totalConfirmed: obj.totalConfirmed,
-                  totalRecoveries: obj.totalRecoveries,
-                  totalDeaths: obj.totalDeaths,
-                  increaseConfirmed: obj.increaseConfirmed,
-                  increaseRecoveries: obj.increaseRecoveries,
-                  increaseDeaths: obj.increaseDeaths,
-                  increaseConfirmedNum: obj.increaseConfirmedNum,
-                  increaseRecoveriesNum: obj.increaseRecoveriesNum,
-                  increaseDeathsNum: obj.increaseDeathsNum,
-                  userEmail: u.email,
-                  countrySlug: obj.country.toLowerCase().replace(/ /g, '-')
-                }
-              })),
-              from: obj.country.toLowerCase().replace(/ /g, '-')+'@covid19dailydigest.com',
-              templateId: 'd-e178db6964e74919b1796070a2142e73',
-            })
-            console.log(`Sent report for ${obj.country} to ${obj.users.map(u=>u.email).join(", ")}`)
-          }
-        }).catch(console.log)
-      }).catch((e) => console.log("err: "+e))
-    }).catch(console.log)
-  })
-})
+  getCountries().then(countries => 
+    Promise.all(countries.map(c => 
+      new Promise((resolve, reject) => User.find({country: c.toLowerCase().replace(/ /g, '-')}, (err, users) => err && reject(err) || !err && resolve({country:c, users})))))
+      .then(data => {
+    Promise.all(data.filter(d => d.users.length > 0).map(async d => 
+      new Promise(async (resolve, reject) => {
+        var obj = {users: d.users, stats: (await api.getCountry({country: d.country}))}
+        obj.stats["caseIncrease"] = parseFloat((obj.stats.cases/(obj.stats.cases-obj.stats.todayCases)*100-100).toFixed(2))
+        obj.stats["deathIncrease"] = parseFloat((obj.stats.deaths/(obj.stats.deaths-obj.stats.todayDeaths)*100-100).toFixed(2))
+        resolve(obj)
+      }))).then(mails => {
+        for(var mail of mails){
+          mailer.send({
+            personalizations: mail.users.map(u => ({
+              to: [{email: u.email}], 
+              subject: `COVID19 Daily Digest for ${mail.stats.country}`,
+              dynamic_template_data: { 
+                country: mail.stats.country,
+                totalCases: mail.stats.cases,
+                todayCases: mail.stats.todayCases,
+                todayCasesIncrease: (mail.stats.caseIncrease >= 0 ? "+":"-")+mail.stats.caseIncrease,
+                totalDeaths: mail.stats.deaths,
+                totalDeathsPercent: parseFloat((mail.stats.deaths / mail.stats.cases * 100).toFixed(2)),
+                todayDeaths: mail.stats.todayDeaths,
+                todayDeathsIncrease: (mail.stats.deathIncrease >= 0 ? "+":"-")+mail.stats.deathIncrease,
+                totalRecovered: mail.stats.recovered,
+                totalRecoveredPercent: parseFloat((mail.stats.recovered / mail.stats.cases * 100).toFixed(2)),
+                activeCases: mail.stats.active,
+                activeCasesPercent: parseFloat((mail.stats.active / mail.stats.cases * 100).toFixed(2)),
+                criticalCases: mail.stats.critical,
+                criticalCasesPercent: parseFloat((mail.stats.critical / mail.stats.cases * 100).toFixed(2)),
+                casesPerMillion: mail.stats.casesPerOneMillion,
+                deathsPerMillion: mail.stats.deathsPerOneMillion,
+                infectionRate: parseFloat((mail.stats.casesPerOneMillion/1000000*100).toFixed(5)),
+                deathRate: parseFloat((mail.stats.deathsPerOneMillion/1000000*100).toFixed(5)),
+                userEmail: u.email,
+                countrySlug: mail.stats.country.toLowerCase().replace(/ /g, '-')
+              }
+            })),
+            from: mail.stats.country.toLowerCase().replace(/ /g, '-')+'@covid19dailydigest.com',
+            templateId: 'd-e178db6964e74919b1796070a2142e73',
+          })
+          console.log(`Sent report for ${mail.stats.country} to ${mail.users.map(u=>u.email).join(", ")}`)
+        }
+    })
+  }))
+//})
