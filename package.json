@@ -20,8 +20,7 @@
     "mongoose": "5.9.4",
     "morgan": "1.9.1",
     "node-cron": "2.0.3",
-    "path": "0.12.7",
-    "request": "2.88.2",
-    "request-promise": "4.2.5"
+    "novelcovid": "1.0.7-b3",
+    "path": "0.12.7"
   }
 }
