@@ -140,6 +140,7 @@ function getCountries(){
 }
 
 app.use((err, req, res, next) => {
+  console.log(err)
   res.locals.message = err.message
   res.locals.error = !isProduction ? err : {}
   res.status(err.status || 5e2).send({error: err.message})
