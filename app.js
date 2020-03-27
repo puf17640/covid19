@@ -69,6 +69,7 @@ app.post('/register', async (req, res, next) => {
           req.session.user = newU
           console.log(`${email} subscribed to mails for ${country}`)
           res.redirect('/#signup')
+          console.log(api)
           var info = (await api.getCountry({country}))
           info["caseIncrease"] = parseFloat((info.cases/(info.cases-info.todayCases)*100-100).toFixed(2))
           info["deathIncrease"] = parseFloat((info.deaths/(info.deaths-info.todayDeaths)*100-100).toFixed(2))
