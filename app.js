@@ -44,7 +44,7 @@ if(isProduction)
       res.redirect(`https://${req.hostname}${req.path}`)
   })
 
-app.get('/', (req, res, next) => res.render("index", { unregistered: req.session.unregistered, user: req.session.user, error: req.session.err, data: getCountries()})).catch((err)=>res.status(500).send(err))
+app.get('/', (req, res, next) => res.render("index", { unregistered: req.session.unregistered, user: req.session.user, error: req.session.err, data: getCountries()}))
 
 app.use((req, res, next) => {
   delete req.session.user
