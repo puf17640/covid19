@@ -53,7 +53,7 @@ app.use((req, res, next) => {
   next()
 })
 
-app.post('/register', (req, res, next) => {
+app.post('/register', async (req, res, next) => {
   const { country, email} = req.body
   User.findOne({
     email, country: country.toLowerCase().replace(/ /g, '-')
@@ -69,6 +69,30 @@ app.post('/register', (req, res, next) => {
           req.session.user = newU
           console.log(`${email} subscribed to mails for ${country}`)
           res.redirect('/#signup')
+          var info = (await api.getCountry({country}))
+          info["caseIncrease"] = parseFloat((info.cases/(info.cases-info.todayCases)*100-100).toFixed(2))
+          info["deathIncrease"] = parseFloat((info.deaths/(info.deaths-info.todayDeaths)*100-100).toFixed(2))
+          mailer.send({
+            to: [email],
+            from: "registered@covid19dailydigest.com",
+            dynamic_template_data: {
+              country: country,
+              totalCases: info.cases,
+              activeCases: info.active,
+              activeCasesPercent: parseFloat((mail.stats.active / mail.stats.cases * 100).toFixed(2)),
+              totalDeaths: info.deaths,
+              totalDeathsPercent: parseFloat((mail.stats.deaths / mail.stats.cases * 100).toFixed(2)),
+              totalRecovered: info.recovered,
+              totalRecoveredPercent: parseFloat((mail.stats.recovered / mail.stats.cases * 100).toFixed(2)),
+              todayCases: info.todayCases,
+              todayCasesIncrease: (mail.stats.caseIncrease >= 0 ? "+":"-")+mail.stats.caseIncrease,
+              todayDeaths: info.todayDeaths,
+              todayDeathsIncrease: (mail.stats.deathIncrease >= 0 ? "+":"-")+mail.stats.deathIncrease,
+              userEmail: "puf17640@spengergasse.at",
+              countrySlug: "italy"
+            },
+            templateId: "d-7c65e6469d0d44f9aad9fb18666d3678"
+          })
         })
       }else{
         req.session.err = 'Invalid Email.'
