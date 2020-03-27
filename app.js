@@ -199,7 +199,7 @@ cron.schedule("0 15 20 * * *", async () =>{
               countrySlug: mail.country.slug
             }
           })),
-          from: mail.stats.country.toLowerCase().replace(/ /g, '-')+'@covid19dailydigest.com',
+          from: mail.country.slug+'@covid19dailydigest.com',
           templateId: 'd-e178db6964e74919b1796070a2142e73',
         })
         console.log(`Sent report for ${mail.country.name} to ${mail.users.map(u=>u.email).join(", ")}`)
