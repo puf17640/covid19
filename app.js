@@ -136,7 +136,7 @@ function validateEmailAddress(email) {
 }
 
 function getCountries(){
-  JSON.parse(fs.readFileSync(path.join(__dirname, '/countries.json')))
+  return JSON.parse(fs.readFileSync(path.join(__dirname, '/countries.json')))
 }
 
 app.use((err, req, res, next) => {
