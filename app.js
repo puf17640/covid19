@@ -53,7 +53,7 @@ app.use((req, res, next) => {
   next()
 })
 
-app.post('/register', async (req, res, next) => {
+app.post('/register', (req, res, next) => {
   const { country, email} = req.body
   User.findOne({
     email, country: country.toLowerCase().replace(/ /g, '-')
@@ -65,11 +65,10 @@ app.post('/register', async (req, res, next) => {
     }else{
       if(validateEmailAddress(email)){
         let newU = new User({email, country: country.toLowerCase().replace(/ /g, '-')})
-        newU.save((err)=> {
+        newU.save(async (err)=> {
           req.session.user = newU
           console.log(`${email} subscribed to mails for ${country}`)
           res.redirect('/#signup')
-          console.log(api)
           var info = (await api.getCountry({country}))
           info["caseIncrease"] = parseFloat((info.cases/(info.cases-info.todayCases)*100-100).toFixed(2))
           info["deathIncrease"] = parseFloat((info.deaths/(info.deaths-info.todayDeaths)*100-100).toFixed(2))
