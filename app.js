@@ -80,17 +80,17 @@ app.post('/register', (req, res, next) => {
               country: country,
               totalCases: info.cases,
               activeCases: info.active,
-              activeCasesPercent: parseFloat((mail.stats.active / mail.stats.cases * 100).toFixed(2)),
+              activeCasesPercent: parseFloat((info.active / info.cases * 100).toFixed(2)),
               totalDeaths: info.deaths,
-              totalDeathsPercent: parseFloat((mail.stats.deaths / mail.stats.cases * 100).toFixed(2)),
+              totalDeathsPercent: parseFloat((info.deaths / info.cases * 100).toFixed(2)),
               totalRecovered: info.recovered,
-              totalRecoveredPercent: parseFloat((mail.stats.recovered / mail.stats.cases * 100).toFixed(2)),
+              totalRecoveredPercent: parseFloat((info.recovered / info.cases * 100).toFixed(2)),
               todayCases: info.todayCases,
-              todayCasesIncrease: (mail.stats.caseIncrease >= 0 ? "+":"-")+mail.stats.caseIncrease,
+              todayCasesIncrease: (info.caseIncrease >= 0 ? "+":"-")+info.caseIncrease,
               todayDeaths: info.todayDeaths,
-              todayDeathsIncrease: (mail.stats.deathIncrease >= 0 ? "+":"-")+mail.stats.deathIncrease,
-              userEmail: "puf17640@spengergasse.at",
-              countrySlug: "italy"
+              todayDeathsIncrease: (info.deathIncrease >= 0 ? "+":"-")+info.deathIncrease,
+              userEmail: email,
+              countrySlug: country.toLowerCase().replace(/ /g, '-')
             },
             templateId: "d-7c65e6469d0d44f9aad9fb18666d3678"
           })
