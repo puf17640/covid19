@@ -119,7 +119,7 @@ app.get('/unregister', (req, res, next) => {
         to: [email],
         from: "unsubscribed@covid19dailydigest.com",
         dynamic_template_data: {
-          country
+          country: getCountries().find(c => c.slug === country).name
         },
         templateId: "d-7887262dd5c94092aebb98c695620cfc"
       })
@@ -136,9 +136,7 @@ function validateEmailAddress(email) {
 }
 
 function getCountries(){
-  return new Promise((resolve, reject) => {
-    resolve(JSON.parse(fs.readFileSync(path.join(__dirname, '/countries.json'))))
-  })
+  JSON.parse(fs.readFileSync(path.join(__dirname, '/countries.json')))
 }
 
 app.use((err, req, res, next) => {
@@ -155,50 +153,50 @@ if(process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH)
 
 cron.schedule("0 15 20 * * *", async () =>{
   console.log(new Date())
-  getCountries().then(countries => 
-    Promise.all(countries.map(c => 
-      new Promise((resolve, reject) => User.find({country: c.toLowerCase().replace(/ /g, '-')}, (err, users) => err && reject(err) || !err && resolve({country:c, users})))))
-      .then(data => {
-    Promise.all(data.filter(d => d.users.length > 0).map(async d => 
-      new Promise(async (resolve, reject) => {
-        var obj = {users: d.users, stats: (await api.getCountry({country: d.country}))}
-        obj.stats["caseIncrease"] = parseFloat((obj.stats.cases/(obj.stats.cases-obj.stats.todayCases)*100-100).toFixed(2))
-        obj.stats["deathIncrease"] = parseFloat((obj.stats.deaths/(obj.stats.deaths-obj.stats.todayDeaths)*100-100).toFixed(2))
-        resolve(obj)
-      }))).then(mails => {
-        for(var mail of mails){
-          mailer.send({
-            personalizations: mail.users.map(u => ({
-              to: [{email: u.email}], 
-              subject: `COVID19 Daily Digest for ${mail.stats.country}`,
-              dynamic_template_data: { 
-                country: mail.stats.country,
-                totalCases: mail.stats.cases,
-                todayCases: mail.stats.todayCases,
-                todayCasesIncrease: (mail.stats.caseIncrease >= 0 ? "+":"-")+mail.stats.caseIncrease,
-                totalDeaths: mail.stats.deaths,
-                totalDeathsPercent: parseFloat((mail.stats.deaths / mail.stats.cases * 100).toFixed(2)),
-                todayDeaths: mail.stats.todayDeaths,
-                todayDeathsIncrease: (mail.stats.deathIncrease >= 0 ? "+":"-")+mail.stats.deathIncrease,
-                totalRecovered: mail.stats.recovered,
-                totalRecoveredPercent: parseFloat((mail.stats.recovered / mail.stats.cases * 100).toFixed(2)),
-                activeCases: mail.stats.active,
-                activeCasesPercent: parseFloat((mail.stats.active / mail.stats.cases * 100).toFixed(2)),
-                criticalCases: mail.stats.critical,
-                criticalCasesPercent: parseFloat((mail.stats.critical / mail.stats.cases * 100).toFixed(2)),
-                casesPerMillion: mail.stats.casesPerOneMillion,
-                deathsPerMillion: mail.stats.deathsPerOneMillion,
-                infectionRate: parseFloat((mail.stats.casesPerOneMillion/1000000*100).toFixed(5)),
-                deathRate: parseFloat((mail.stats.deathsPerOneMillion/1000000*100).toFixed(5)),
-                userEmail: u.email,
-                countrySlug: mail.stats.country.toLowerCase().replace(/ /g, '-')
-              }
-            })),
-            from: mail.stats.country.toLowerCase().replace(/ /g, '-')+'@covid19dailydigest.com',
-            templateId: 'd-e178db6964e74919b1796070a2142e73',
-          })
-          console.log(`Sent report for ${mail.stats.country} to ${mail.users.map(u=>u.email).join(", ")}`)
-        }
+  var countries = getCountries()
+  Promise.all(countries.map(c => 
+    new Promise((resolve, reject) => User.find({country: c.slug}, (err, users) => err && reject(err) || !err && resolve({country:c, users})))))
+    .then(data => {
+      Promise.all(data.filter(d => d.users.length > 0).map(async d => 
+        new Promise(async (resolve, reject) => {
+          var obj = {country: d.country, users: d.users, stats: (await api.getCountry({country: d.country.name}))}
+          obj.stats["caseIncrease"] = parseFloat((obj.stats.cases/(obj.stats.cases-obj.stats.todayCases)*100-100).toFixed(2))
+          obj.stats["deathIncrease"] = parseFloat((obj.stats.deaths/(obj.stats.deaths-obj.stats.todayDeaths)*100-100).toFixed(2))
+          resolve(obj)
+    }))).then(mails => {
+      for(var mail of mails){
+        mailer.send({
+          personalizations: mail.users.map(u => ({
+            to: [{email: u.email}], 
+            subject: `COVID19 Daily Digest for ${mail.stats.country}`,
+            dynamic_template_data: { 
+              country: mail.country.name,
+              totalCases: mail.stats.cases,
+              todayCases: mail.stats.todayCases,
+              todayCasesIncrease: (mail.stats.caseIncrease >= 0 ? "+":"-")+mail.stats.caseIncrease,
+              totalDeaths: mail.stats.deaths,
+              totalDeathsPercent: parseFloat((mail.stats.deaths / mail.stats.cases * 100).toFixed(2)),
+              todayDeaths: mail.stats.todayDeaths,
+              todayDeathsIncrease: (mail.stats.deathIncrease >= 0 ? "+":"-")+mail.stats.deathIncrease,
+              totalRecovered: mail.stats.recovered,
+              totalRecoveredPercent: parseFloat((mail.stats.recovered / mail.stats.cases * 100).toFixed(2)),
+              activeCases: mail.stats.active,
+              activeCasesPercent: parseFloat((mail.stats.active / mail.stats.cases * 100).toFixed(2)),
+              criticalCases: mail.stats.critical,
+              criticalCasesPercent: parseFloat((mail.stats.critical / mail.stats.cases * 100).toFixed(2)),
+              casesPerMillion: mail.stats.casesPerOneMillion,
+              deathsPerMillion: mail.stats.deathsPerOneMillion,
+              infectionRate: parseFloat((mail.stats.casesPerOneMillion/1000000*100).toFixed(5)),
+              deathRate: parseFloat((mail.stats.deathsPerOneMillion/1000000*100).toFixed(5)),
+              userEmail: u.email,
+              countrySlug: mail.country.slug
+            }
+          })),
+          from: mail.stats.country.toLowerCase().replace(/ /g, '-')+'@covid19dailydigest.com',
+          templateId: 'd-e178db6964e74919b1796070a2142e73',
+        })
+        console.log(`Sent report for ${mail.country.name} to ${mail.users.map(u=>u.email).join(", ")}`)
+      }
     })
-  }))
+  })
 })
