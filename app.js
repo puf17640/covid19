@@ -75,7 +75,7 @@ app.post('/register', (req, res, next) => {
           info["deathIncrease"] = parseFloat((info.deaths/(info.deaths-info.todayDeaths)*100-100).toFixed(2))
           mailer.send({
             to: [email],
-            from: "registered@covid19dailydigest.com",
+            from: "subscribed@covid19dailydigest.com",
             dynamic_template_data: {
               country: country,
               totalCases: info.cases,
@@ -115,6 +115,14 @@ app.get('/unregister', (req, res, next) => {
       req.session.unregistered = true
       req.session.user = null
       res.redirect('/#signup')
+      mailer.send({
+        to: [email],
+        from: "unsubscribed@covid19dailydigest.com",
+        dynamic_template_data: {
+          country
+        },
+        templateId: "d-7887262dd5c94092aebb98c695620cfc"
+      })
     }else{
       req.session.err = 'This Email is not registered for that country.'
       res.redirect('/#signup')
