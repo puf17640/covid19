@@ -9,7 +9,8 @@ const express = require('express'),
   http = require('http'),
   https = require('https'),
   fs = require('fs'),
-  api = require('novelcovid')
+  api = require('novelcovid'),
+  got = require('got')
 
 require('./models')
 mailer.setApiKey(process.env.SENDGRID_APIKEY);
@@ -53,54 +54,59 @@ app.use((req, res, next) => {
   next()
 })
 
-app.post('/register', (req, res, next) => {
-  console.log(JSON.stringify(req.body))
+app.post('/register', async (req, res, next) => {
   const { country, email} = req.body
-  User.findOne({
-    email, country: country.toLowerCase().replace(/ /g, '-')
-  }, (err, user) => {
-    if (err) return next(err)
-    if (user) {
-      req.session.err = 'This Email has already been used to register for that country.'
-      res.redirect('/#signup')
-    }else{
-      if(validateEmailAddress(email)){
-        let newU = new User({email, country: country.toLowerCase().replace(/ /g, '-')})
-        newU.save(async (err)=> {
-          req.session.user = newU
-          console.log(`${email} subscribed to mails for ${country}`)
-          res.redirect('/#signup')
-          var info = (await api.getCountry({country}))
-          info["caseIncrease"] = parseFloat((info.cases/(info.cases-info.todayCases)*100-100).toFixed(2))
-          info["deathIncrease"] = parseFloat((info.deaths/(info.deaths-info.todayDeaths)*100-100).toFixed(2))
-          mailer.send({
-            to: [email],
-            from: "subscribed@covid19dailydigest.com",
-            dynamic_template_data: {
-              country: country,
-              totalCases: info.cases,
-              activeCases: info.active,
-              activeCasesPercent: parseFloat((info.active / info.cases * 100).toFixed(2)),
-              totalDeaths: info.deaths,
-              totalDeathsPercent: parseFloat((info.deaths / info.cases * 100).toFixed(2)),
-              totalRecovered: info.recovered,
-              totalRecoveredPercent: parseFloat((info.recovered / info.cases * 100).toFixed(2)),
-              todayCases: info.todayCases,
-              todayCasesIncrease: (info.caseIncrease >= 0 ? "+":"-")+info.caseIncrease,
-              todayDeaths: info.todayDeaths,
-              todayDeathsIncrease: (info.deathIncrease >= 0 ? "+":"-")+info.deathIncrease,
-              userEmail: email,
-              countrySlug: country.toLowerCase().replace(/ /g, '-')
-            },
-            templateId: "d-7c65e6469d0d44f9aad9fb18666d3678"
-          })
-        })
-      }else{
-        req.session.err = 'Invalid Email.'
+  var response = JSON.parse((await got(`http://apilayer.net/api/check?access_key=a7477d475c7e05f32078ebec882e806d&email=${email}`)).body)
+  if(response.mx_found && response.smtp_check){
+    User.findOne({
+      email, country: country.toLowerCase().replace(/ /g, '-')
+    }, (err, user) => {
+      if (err) return next(err)
+      if (user) {
+        req.session.err = 'This Email has already been used to register for that country.'
         res.redirect('/#signup')
+      }else{
+        if(validateEmailAddress(email)){
+          let newU = new User({email, country: country.toLowerCase().replace(/ /g, '-')})
+          newU.save(async (err)=> {
+            req.session.user = newU
+            console.log(`${email} subscribed to mails for ${country}`)
+            res.redirect('/#signup')
+            var info = (await api.getCountry({country}))
+            info["caseIncrease"] = parseFloat((info.cases/(info.cases-info.todayCases)*100-100).toFixed(2))
+            info["deathIncrease"] = parseFloat((info.deaths/(info.deaths-info.todayDeaths)*100-100).toFixed(2))
+            mailer.send({
+              to: [email],
+              from: "subscribed@covid19dailydigest.com",
+              dynamic_template_data: {
+                country: country,
+                totalCases: info.cases,
+                activeCases: info.active,
+                activeCasesPercent: parseFloat((info.active / info.cases * 100).toFixed(2)),
+                totalDeaths: info.deaths,
+                totalDeathsPercent: parseFloat((info.deaths / info.cases * 100).toFixed(2)),
+                totalRecovered: info.recovered,
+                totalRecoveredPercent: parseFloat((info.recovered / info.cases * 100).toFixed(2)),
+                todayCases: info.todayCases,
+                todayCasesIncrease: (info.caseIncrease >= 0 ? "+":"-")+info.caseIncrease,
+                todayDeaths: info.todayDeaths,
+                todayDeathsIncrease: (info.deathIncrease >= 0 ? "+":"-")+info.deathIncrease,
+                userEmail: email,
+                countrySlug: country.toLowerCase().replace(/ /g, '-')
+              },
+              templateId: "d-7c65e6469d0d44f9aad9fb18666d3678"
+            })
+          })
+        }else{
+          req.session.err = 'Invalid Email.'
+          res.redirect('/#signup')
+        }
       }
-    }
-  })
+    })
+  }else{
+    req.session.err = 'Invalid Email.'
+    res.redirect('/#signup')
+  }
 })
 
 app.get('/unregister', (req, res, next) => {
