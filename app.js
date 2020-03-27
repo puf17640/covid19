@@ -54,6 +54,7 @@ app.use((req, res, next) => {
 })
 
 app.post('/register', (req, res, next) => {
+  console.log(JSON.stringify(req.body))
   const { country, email} = req.body
   User.findOne({
     email, country: country.toLowerCase().replace(/ /g, '-')
