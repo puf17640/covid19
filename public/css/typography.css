@@ -183,7 +183,7 @@ a:visited {
     text-decoration: none;
     font-weight: normal;
     font-size: 12px;
-    color: #111;
+    color: #bc9eff;
     transition: all 0.3s ease-in-out;
     -webkit-transition: all 0.3s ease-in-out;
     -moz-transition: all 0.3s ease-in-out;
@@ -193,7 +193,7 @@ a:visited {
 
 a:hover,
 a:active {
-    color: #5b1ffa;
+    color: #9a6bff;
     text-decoration: none;
     outline: 0;
 }
