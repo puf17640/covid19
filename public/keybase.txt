@@ -1,0 +1,56 @@
+==================================================================
+https://keybase.io/julianpufler
+--------------------------------------------------------------------
+
+I hereby claim:
+
+  * I am an admin of https://covid19dailydigest.com
+  * I am julianpufler (https://keybase.io/julianpufler) on keybase.
+  * I have a public key ASAe_KYySZS6DmfS7jcDhjbtHezv_EcDQsmAmxRcLtUi-go
+
+To do so, I am signing this object:
+
+{
+  body: {
+    key: {
+      eldest_kid: 01201efca6324994ba0e67d2ee37038636ed1deceffc470342c9809b145c2ed522fa0a,
+      host: keybase.io,
+      kid: 01201efca6324994ba0e67d2ee37038636ed1deceffc470342c9809b145c2ed522fa0a,
+      uid: 5046085688d04cb86e1e67f28b467c19,
+      username: julianpufler
+    },
+    merkle_root: {
+      ctime: 1585922595,
+      hash: f1b9de1265f7aa88967ab904c8f337388c2665551f124dd698a7b8ab71d3dda8f0cdbdab946afd29df17cedc03ff5f52976d597db5b18ca4c2a12412990e916a,
+      hash_meta: bf2fa8684732795370127401c458e5ab191d7ca2854c773261464a0f7bb0abd0,
+      seqno: 15752653
+    },
+    service: {
+      entropy: 7m/ilOstMA+FUTbMV1ND+Uwd,
+      hostname: covid19dailydigest.com,
+      protocol: https:
+    },
+    type: web_service_binding,
+    version: 2
+  },
+  client: {
+    name: keybase.io go client,
+    version: 5.3.0
+  },
+  ctime: 1585922608,
+  expire_in: 504576000,
+  prev: d4545a8b12be81bb01a82ab8e1998ee154bde333c9aced4f131fa01f568d9ff0,
+  seqno: 6,
+  tag: signature
+}
+
+which yields the signature:
+
+hKRib2R5hqhkZXRhY2hlZMOpaGFzaF90eXBlCqNrZXnEIwEgHvymMkmUug5n0u43A4Y27R3s7/xHA0LJgJsUXC7VIvoKp3BheWxvYWTESpcCBsQg1FRaixK+gbsBqCq44ZmO4VS94zPJrO1PEx+gH1aNn/DEIAEYvtpgYa5Hv2VW+BiCWXeXD4ynOIbcnl/NXmMS8ukDAgHCo3NpZ8RAtfElw3iIclQli1tJmTTWoto9+HWWmT/W5d9A4oVxYdTobWAmy2xS5G75lBvY8WD19xvBOzIYyMD2Scq7UsMwCahzaWdfdHlwZSCkaGFzaIKkdHlwZQildmFsdWXEIH3XfcBIXr9mLgbU3/vN48xJPtP0dAdtrPZNAq8ArnEyo3RhZ80CAqd2ZXJzaW9uAQ==
+
+And finally, I am proving ownership of this host by posting or
+appending to this document.
+
+View my publicly-auditable identity here: https://keybase.io/julianpufler
+
+==================================================================
