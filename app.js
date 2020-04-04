@@ -5,11 +5,10 @@ const express = require('express'),
   app = express(),
   cron = require('node-cron'),
   mailer = require('@sendgrid/mail'),
-  moment = require('moment'),
   http = require('http'),
   https = require('https'),
   fs = require('fs'),
-  api = require('novelcovid'),
+  api = require('covidapi'),
   got = require('got')
 
 require('./models')
@@ -24,7 +23,7 @@ if(dotenvconf.error || !process.env.NODE_ENV || !process.env.HTTP_PORT || !proce
 mongoose.connect(process.env.MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true})
 const isProduction = process.env.NODE_ENV === 'production'
 
-app.set('views', path.join(__dirname, 'views'))
+app.set('views', path.join(__dirname, '/views'))
 app.set('view engine', 'ejs')
 
 app.use(`/.well-known/acme-challenge/${process.env.CERTBOT_KEY}`, (req, res, next) => res.send(process.env.CERTBOT_TOKEN))
@@ -45,7 +44,7 @@ if(isProduction)
       res.redirect(`https://${req.hostname}${req.path}`)
   })
 
-app.get('/', (req, res, next) => res.render("index", { unregistered: req.session.unregistered, user: req.session.user, error: req.session.err, data: getCountries().map(c => c.name)}))
+app.get('/', async (req, res, next) => res.render("index", { unregistered: req.session.unregistered, user: req.session.user, error: req.session.err, data: (await getCountries()).map(c => c.name)}))
 
 app.use((req, res, next) => {
   delete req.session.user
@@ -72,7 +71,7 @@ app.post('/register', async (req, res, next) => {
             req.session.user = newU
             console.log(`${email} subscribed to mails for ${country}`)
             res.redirect('/#signup')
-            var info = (await api.getCountry({country}))
+            let info = (await api.countries(country))
             info["caseIncrease"] = parseFloat((info.cases/(info.cases-info.todayCases)*100-100).toFixed(2))
             info["deathIncrease"] = parseFloat((info.deaths/(info.deaths-info.todayDeaths)*100-100).toFixed(2))
             mailer.send({
@@ -113,7 +112,7 @@ app.get('/unregister', (req, res, next) => {
   const { email, country } = req.query
   User.findOne({
     email, country: country.toLowerCase().replace(/ /g, '-')
-  }, (err, user) => {
+  }, async (err, user) => {
     if (err) return next(err)
     if (user) {
       console.log(`${email} unsubscribed from mails for ${country}`)
@@ -125,7 +124,7 @@ app.get('/unregister', (req, res, next) => {
         to: [email],
         from: "unsubscribed@covid19dailydigest.com",
         dynamic_template_data: {
-          country: getCountries().find(c => c.slug === country).name
+          country: (await getCountries()).find(c => c.slug === country).name
         },
         templateId: "d-7887262dd5c94092aebb98c695620cfc"
       })
@@ -141,8 +140,8 @@ function validateEmailAddress(email) {
   return expression.test(String(email).toLowerCase());
 }
 
-function getCountries(){
-  return JSON.parse(fs.readFileSync(path.join(__dirname, '/countries.json')))
+async function getCountries(){
+  return (await api.countries()).map(c => ({name: c.country, slug: c.country.toLowerCase().replace(/ /g, '-')}))
 }
 
 app.use((err, req, res, next) => {
@@ -157,16 +156,15 @@ http.createServer(app).listen(process.env.HTTP_PORT, () => console.log(`listenin
 if(process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH)
   https.createServer({ key: fs.readFileSync(path.resolve(process.env.SSL_KEY_PATH), 'utf8'), cert: fs.readFileSync(path.resolve(process.env.SSL_CERT_PATH), 'utf8')}, app).listen(process.env.HTTPS_PORT, () => console.log(`listening on port ${process.env.HTTPS_PORT}`))
 
-
-cron.schedule("0 15 20 * * *", async () =>{
+cron.schedule("0 15 19 * * *", async () =>{
   console.log(new Date())
-  var countries = getCountries()
+  var countries = await getCountries()
   Promise.all(countries.map(c => 
     new Promise((resolve, reject) => User.find({country: c.slug}, (err, users) => err && reject(err) || !err && resolve({country:c, users})))))
     .then(data => {
       Promise.all(data.filter(d => d.users.length > 0).map(async d => 
         new Promise(async (resolve, reject) => {
-          var obj = {country: d.country, users: d.users, stats: (await api.getCountry({country: d.country.name}))}
+          var obj = { country: d.country, users: d.users, stats: (await api.countries(d.country.name)) }
           obj.stats["caseIncrease"] = parseFloat((obj.stats.cases/(obj.stats.cases-obj.stats.todayCases)*100-100).toFixed(2))
           obj.stats["deathIncrease"] = parseFloat((obj.stats.deaths/(obj.stats.deaths-obj.stats.todayDeaths)*100-100).toFixed(2))
           resolve(obj)
