@@ -155,8 +155,8 @@ http.createServer(app).listen(process.env.HTTP_PORT, () => console.log(`listenin
 
 if(process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH)
   https.createServer({ key: fs.readFileSync(path.resolve(process.env.SSL_KEY_PATH), 'utf8'), cert: fs.readFileSync(path.resolve(process.env.SSL_CERT_PATH), 'utf8')}, app).listen(process.env.HTTPS_PORT, () => console.log(`listening on port ${process.env.HTTPS_PORT}`))
-new Promise(async (resolve, reject) => {
-//cron.schedule("0 15 19 * * *", async () =>{
+
+cron.schedule("0 15 19 * * *", async () =>{
   console.log(new Date())
   var countries = await getCountries()
   var yesterdayData = await api.yesterday.countries();
