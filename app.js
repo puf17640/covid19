@@ -71,7 +71,7 @@ app.post('/register', async (req, res, next) => {
             req.session.user = newU
             console.log(`${email} subscribed to mails for ${country}`)
             res.redirect('/#signup')
-            let info = (await api.countries(country))
+            let info = (await api.countries({country}))
             info["caseIncrease"] = parseFloat((info.cases/(info.cases-info.todayCases)*100-100).toFixed(2))
             info["deathIncrease"] = parseFloat((info.deaths/(info.deaths-info.todayDeaths)*100-100).toFixed(2))
             mailer.send({
@@ -155,18 +155,27 @@ http.createServer(app).listen(process.env.HTTP_PORT, () => console.log(`listenin
 
 if(process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH)
   https.createServer({ key: fs.readFileSync(path.resolve(process.env.SSL_KEY_PATH), 'utf8'), cert: fs.readFileSync(path.resolve(process.env.SSL_CERT_PATH), 'utf8')}, app).listen(process.env.HTTPS_PORT, () => console.log(`listening on port ${process.env.HTTPS_PORT}`))
-
-cron.schedule("0 15 19 * * *", async () =>{
+new Promise(async (resolve, reject) => {
+//cron.schedule("0 15 19 * * *", async () =>{
   console.log(new Date())
   var countries = await getCountries()
+  var yesterdayData = await api.yesterday.countries();
   Promise.all(countries.map(c => 
     new Promise((resolve, reject) => User.find({country: c.slug}, (err, users) => err && reject(err) || !err && resolve({country:c, users})))))
     .then(data => {
       Promise.all(data.filter(d => d.users.length > 0).map(async d => 
         new Promise(async (resolve, reject) => {
-          var obj = { country: d.country, users: d.users, stats: (await api.countries(d.country.name)) }
-          obj.stats["caseIncrease"] = parseFloat((obj.stats.cases/(obj.stats.cases-obj.stats.todayCases)*100-100).toFixed(2))
-          obj.stats["deathIncrease"] = parseFloat((obj.stats.deaths/(obj.stats.deaths-obj.stats.todayDeaths)*100-100).toFixed(2))
+          var obj = { country: d.country, users: d.users, stats: (await api.countries({country:d.country.name})), yesterday: yesterdayData.find(c => c.country === d.country.name) }
+          obj.stats["todayRecovered"] = obj.stats.recovered - obj.yesterday.recovered
+          obj.stats["todayTests"] = obj.stats.tests - obj.yesterday.tests
+          obj.stats["casesIncrease"] = parseFloat((obj.stats.cases/(obj.stats.cases-obj.stats.todayCases)*100-100).toFixed(2))
+          obj.stats["deathsIncrease"] = parseFloat((obj.stats.deaths/(obj.stats.deaths-obj.stats.todayDeaths)*100-100).toFixed(2))
+          obj.stats["recoveredIncrease"] = parseFloat((obj.stats.recovered/(obj.stats.recovered-obj.stats.todayRecovered)*100-100).toFixed(2))
+          obj.stats["testsIncrease"] = parseFloat((obj.stats.tests/(obj.stats.tests-obj.stats.todayTests)*100-100).toFixed(2))
+          obj.yesterday["casesIncrease"] = parseFloat((obj.yesterday.cases/(obj.yesterday.cases-obj.yesterday.todayCases)*100-100).toFixed(2))
+          obj.yesterday["deathsIncrease"] = parseFloat((obj.yesterday.deaths/(obj.yesterday.deaths-obj.yesterday.todayDeaths)*100-100).toFixed(2))
+          obj.yesterday["recoveredIncrease"] = parseFloat((obj.yesterday.recovered/(obj.yesterday.recovered-obj.yesterday.todayRecovered)*100-100).toFixed(2))
+          obj.yesterday["testsIncrease"] = parseFloat((obj.yesterday.tests/(obj.yesterday.tests-obj.yesterday.todayTests)*100-100).toFixed(2))
           resolve(obj)
     }))).then(mails => {
       for(var mail of mails){
@@ -177,22 +186,41 @@ cron.schedule("0 15 19 * * *", async () =>{
             dynamic_template_data: { 
               country: mail.country.name,
               totalCases: mail.stats.cases,
-              todayCases: mail.stats.todayCases,
-              todayCasesIncrease: (mail.stats.caseIncrease >= 0 ? "+":"-")+mail.stats.caseIncrease,
-              totalDeaths: mail.stats.deaths,
-              totalDeathsPercent: parseFloat((mail.stats.deaths / mail.stats.cases * 100).toFixed(2)),
-              todayDeaths: mail.stats.todayDeaths,
-              todayDeathsIncrease: (mail.stats.deathIncrease >= 0 ? "+":"-")+mail.stats.deathIncrease,
-              totalRecovered: mail.stats.recovered,
-              totalRecoveredPercent: parseFloat((mail.stats.recovered / mail.stats.cases * 100).toFixed(2)),
+              yesterdayTotalCases: mail.yesterday.cases,
               activeCases: mail.stats.active,
+              yesterdayActiveCases: mail.yesterday.active,
               activeCasesPercent: parseFloat((mail.stats.active / mail.stats.cases * 100).toFixed(2)),
+              yesterdayActiveCasesPercent: parseFloat((mail.yesterday.active / mail.yesterday.cases * 100).toFixed(2)),
+              totalDeaths: mail.stats.deaths,
+              yesterdayTotalDeaths: mail.yesterday.deaths,
+              totalDeathsPercent: parseFloat((mail.stats.deaths / mail.stats.cases * 100).toFixed(2)),
+              yesterdayTotalDeathsPercent: parseFloat((mail.yesterday.deaths / mail.yesterday.cases * 100).toFixed(2)),
+              totalRecovered: mail.stats.recovered,
+              yesterdayTotalRecovered: mail.yesterday.recovered,
+              totalRecoveredPercent: parseFloat((mail.stats.recovered / mail.stats.recovered * 100).toFixed(2)),
+              yesterdayTotalRecoveredPercent: parseFloat((mail.yesterday.recovered / mail.yesterday.recovered * 100).toFixed(2)),
+              totalTests: mail.stats.tests,
+              yesterdayTotalTests: mail.yesterday.tests,
+              todayCases: mail.stats.todayCases,
+              yesterdayCases: mail.yesterday.todayCases,
+              todayCasesIncrease: (mail.stats.casesIncrease >= 0 ? "+":"-")+mail.stats.casesIncrease,
+              todayRecovered: mail.stats.todayRecovered,
+              yesterdayRecovered: mail.yesterday.todayRecovered,
+              todayRecoveredIncrease: (mail.stats.recoveredIncrease >= 0 ? "+":"-")+mail.stats.recoveredIncrease,
+              todayDeaths: mail.stats.todayDeaths,
+              yesterdayDeaths: mail.yesterday.todayDeaths,
+              todayDeathsIncrease: (mail.stats.deathsIncrease >= 0 ? "+":"-")+mail.stats.deathsIncrease,
+              todayTests: mail.stats.todayTests,
+              yesterdayTests: mail.yesterday.todayTests,
+              todayTestsIncrease: (mail.stats.testsIncrease >= 0 ? "+":"-")+mail.stats.testsIncrease,
               criticalCases: mail.stats.critical,
               criticalCasesPercent: parseFloat((mail.stats.critical / mail.stats.cases * 100).toFixed(2)),
               casesPerMillion: mail.stats.casesPerOneMillion,
               deathsPerMillion: mail.stats.deathsPerOneMillion,
+              testsPerMillion: mail.stats.testsPerOneMillion,
               infectionRate: parseFloat((mail.stats.casesPerOneMillion/1000000*100).toFixed(5)),
               deathRate: parseFloat((mail.stats.deathsPerOneMillion/1000000*100).toFixed(5)),
+              testRate: parseFloat((mail.stats.testsPerOneMillion/1000000*100).toFixed(5)),
               userEmail: u.email,
               countrySlug: mail.country.slug
             }

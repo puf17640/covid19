@@ -11,7 +11,7 @@
   "dependencies": {
     "@sendgrid/mail": "6.5.4",
     "cookie-parser": "1.4.4",
-    "covidapi": "0.0.1",
+    "covidapi": "0.0.4",
     "dotenv": "8.2.0",
     "ejs": "3.0.1",
     "express": "4.17.1",
