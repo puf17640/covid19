@@ -198,7 +198,7 @@ cron.schedule("0 15 19 * * *", async () =>{
               totalRecovered: mail.stats.recovered,
               yesterdayTotalRecovered: mail.yesterday.recovered,
               totalRecoveredPercent: parseFloat((mail.stats.recovered / mail.stats.recovered * 100).toFixed(2)),
-              yesterdayTotalRecoveredPercent: parseFloat((mail.yesterday.recovered / mail.yesterday.recovered * 100).toFixed(2)),
+              yesterdayTotalRecoveredPercent: parseFloat((mail.yesterday.recovered / mail.yesterday.cases * 100).toFixed(2)),
               totalTests: mail.stats.tests,
               yesterdayTotalTests: mail.yesterday.tests,
               todayCases: mail.stats.todayCases,
