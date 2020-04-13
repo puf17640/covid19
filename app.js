@@ -23,8 +23,6 @@ const isProduction = process.env.NODE_ENV === 'production'
 app.set('views', path.join(__dirname, '/views'))
 app.set('view engine', 'ejs')
 
-app.use(`/.well-known/acme-challenge/${process.env.CERTBOT_KEY}`, (req, res, next) => res.send(process.env.CERTBOT_TOKEN))
-
 app.use(require('morgan')(':date[web] | :remote-addr - :method :url :status :response-time ms - :res[content-length]'))
 app.use(require('cookie-parser')())
 app.use(express.json())
@@ -32,14 +30,6 @@ app.use(express.urlencoded({extended: false}))
 app.use(require('express-session')({ name: 'linkr-session', secret: process.env.SESSION_SECRET, cookie: { maxAge: parseInt(process.env.MAX_COOKIE_AGE) || 36e5}, resave: false, saveUninitialized: true, httpOnly: true}))
 app.use(express.static(path.join(__dirname, '/public')))
 app.use(require('helmet')())
-
-if(isProduction)
-  app.use((req, res, next) => {
-    if(req.secure)
-      next()
-    else
-      res.redirect(`https://${req.hostname}${req.path}`)
-  })
 
 app.get('/', async (req, res, next) => res.render("index", { unregistered: req.session.unregistered, user: req.session.user, error: req.session.err, data: (await getCountries()).map(c => c.name)}))
 
@@ -142,7 +132,7 @@ async function getCountries(){
 }
 
 app.use((err, req, res, next) => {
-  console.log(err)
+  console.log(new Date().toISOString(), err)
   res.locals.message = err.message
   res.locals.error = !isProduction ? err : {}
   res.status(err.status || 5e2).send({error: err.message})
