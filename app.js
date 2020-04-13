@@ -9,14 +9,14 @@ const express = require('express'),
   got = require('got')
 
 require('./models')
-mailer.setApiKey(process.env.SENDGRID_APIKEY);
 const User = mongoose.model("User")
 
-if(dotenvconf.error || !process.env.NODE_ENV || !process.env.HTTP_PORT || !process.env.MONGO_URL){
-  console.log('invalid environment variables, please fix your .env file')
+if(dotenvconf.error || !process.env.NODE_ENV || !process.env.HTTP_PORT || !process.env.MONGO_URL || !process.env.SENDGRID_APIKEY){
+  console.error('invalid environment variables, please fix your .env file')
   process.exit(-1)
 }
 
+mailer.setApiKey(process.env.SENDGRID_APIKEY);
 mongoose.connect(process.env.MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true})
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -132,7 +132,7 @@ async function getCountries(){
 }
 
 app.use((err, req, res, next) => {
-  console.log(new Date().toISOString(), err)
+  console.error(new Date().toISOString(), err)
   res.locals.message = err.message
   res.locals.error = !isProduction ? err : {}
   res.status(err.status || 5e2).send({error: err.message})
