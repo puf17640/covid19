@@ -5,9 +5,6 @@ const express = require('express'),
   app = express(),
   cron = require('node-cron'),
   mailer = require('@sendgrid/mail'),
-  http = require('http'),
-  https = require('https'),
-  fs = require('fs'),
   api = require('covidapi'),
   got = require('got')
 
@@ -151,10 +148,7 @@ app.use((err, req, res, next) => {
   res.status(err.status || 5e2).send({error: err.message})
 })
 
-http.createServer(app).listen(process.env.HTTP_PORT, () => console.log(`listening on port ${process.env.HTTP_PORT}`))
-
-if(process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH)
-  https.createServer({ key: fs.readFileSync(path.resolve(process.env.SSL_KEY_PATH), 'utf8'), cert: fs.readFileSync(path.resolve(process.env.SSL_CERT_PATH), 'utf8')}, app).listen(process.env.HTTPS_PORT, () => console.log(`listening on port ${process.env.HTTPS_PORT}`))
+app.listen(process.env.HTTP_PORT, () => console.log(`listening on port ${process.env.HTTP_PORT}`))
 
 cron.schedule("0 15 19 * * *", async () =>{
   console.log(new Date())
