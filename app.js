@@ -11,7 +11,7 @@ const express = require('express'),
 require('./models')
 const User = mongoose.model("User")
 
-if(dotenvconf.error || !process.env.NODE_ENV || !process.env.HTTP_PORT || !process.env.MONGO_URL || !process.env.SENDGRID_APIKEY){
+if(dotenvconf.error || !process.env.NODE_ENV || !process.env.HTTP_PORT || !process.env.MONGO_URL || !process.env.SESSION_SECRET || !process.env.SENDGRID_APIKEY){
   console.error('invalid environment variables, please fix your .env file')
   process.exit(-1)
 }
