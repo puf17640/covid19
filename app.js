@@ -142,14 +142,14 @@ app.listen(process.env.HTTP_PORT, () => console.log(`listening on port ${process
 
 cron.schedule("0 15 19 * * *", async () =>{
   console.log(new Date())
-  var countries = await getCountries()
+  var countries = await api.countries();
   var yesterdayData = await api.yesterday.countries();
   Promise.all(countries.map(c => 
     new Promise((resolve, reject) => User.find({country: c.slug}, (err, users) => err && reject(err) || !err && resolve({country:c, users})))))
     .then(data => {
       Promise.all(data.filter(d => d.users.length > 0).map(async d => 
         new Promise(async (resolve, reject) => {
-          var obj = { country: d.country, users: d.users, stats: (await api.countries({country:d.country.name})), yesterday: yesterdayData.find(c => c.country === d.country.name) }
+          var obj = { country: d.country, users: d.users, stats: countries.find(c => c.country === d.country.name), yesterday: yesterdayData.find(c => c.country === d.country.name) }
           obj.stats["todayRecovered"] = obj.stats.recovered - obj.yesterday.recovered
           obj.stats["todayTests"] = obj.stats.tests - obj.yesterday.tests
           obj.stats["casesIncrease"] = parseFloat((obj.stats.cases/(obj.stats.cases-obj.stats.todayCases)*100-100).toFixed(2))
