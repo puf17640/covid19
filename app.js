@@ -140,6 +140,7 @@ app.use((err, req, res, next) => {
 
 app.listen(process.env.HTTP_PORT, () => console.log(`listening on port ${process.env.HTTP_PORT}`))
 
+/*
 cron.schedule("0 15 19 * * *", async () =>{
   console.log(new Date())
   var countries = await api.countries();
@@ -216,4 +217,4 @@ cron.schedule("0 15 19 * * *", async () =>{
       }
     })
   })
-})
+})*/
